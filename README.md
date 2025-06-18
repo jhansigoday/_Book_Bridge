@@ -1,0 +1,27 @@
+**URL**: https://lovable.dev/projects/817d35fc-24d2-4a4f-b498-c4a421a9559
+
+Simply visit the [Lovable Project](https://lovable.dev/projects/817d35fc-24d2-4a4f-b498-c4a421a95597) and start prompting.
+
+Follow these steps:
+
+Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
+
+Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
+
+Step 3: Install the necessary dependencies.
+npm i
+
+Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
+
+## What technologies are used for this project?
+
+This project is built with:
+
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
