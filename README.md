@@ -1,7 +1,3 @@
-**URL**: https://lovable.dev/projects/817d35fc-24d2-4a4f-b498-c4a421a9559
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/817d35fc-24d2-4a4f-b498-c4a421a95597) and start prompting.
-
 Follow these steps:
 
 Step 1: Clone the repository using the project's Git URL.
