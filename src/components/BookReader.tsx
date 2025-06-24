@@ -304,3 +304,4 @@ export const BookReader: React.FC<BookReaderProps> = ({
     </Dialog>
   );
 };
+// BookBridge update

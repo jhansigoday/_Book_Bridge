@@ -181,3 +181,4 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, onAuthS
     </Dialog>
   );
 };
+// BookBridge update
