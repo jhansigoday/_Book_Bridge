@@ -37,18 +37,19 @@ const additionalFreeBooks: Book[] = [
   },
   {
   id: 'free-7',
-    title: 'Climate Change Solutions',
-    author: 'Prof. James Green',
-    category: 'Science',
-    description: 'An accessible guide to understanding climate change and the innovative solutions being developed to address this global challenge.',
-    isfeatured: true,
-    is_free_to_read: true,
-    content: [
-      {page: 1,text: 'hello    ,.......'},
-      {page: 2,text: 'hello    ,.......'},
-      {page: 3,text: 'hello    ,.......'},
-    ]
-  },
+  title: 'The Adventures of Sherlock Holmes',
+  author: 'Arthur Conan Doyle',
+  category: 'Mystery',
+  description: 'A collection of thrilling detective stories featuring the iconic Sherlock Holmes and Dr. Watson.',
+  isfeatured: false,
+  is_free_to_read: true,
+  content: [
+    { page: 1, text: 'To Sherlock Holmes she is always *the* woman. I have seldom heard him mention her under any other name.' },
+    { page: 2, text: 'In his eyes she eclipses and predominates the whole of her sex.' },
+    { page: 3, text: 'And yet there was but one woman to him, and that woman was the late Irene Adler, of dubious and questionable memory.' }
+  ]
+}
+
   {
     id: 'free-5',
     title: 'Mindful Living',
