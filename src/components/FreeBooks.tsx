@@ -36,7 +36,7 @@ const additionalFreeBooks: Book[] = [
     ]
   },
   {
-  id: 'free-6',
+  id: 'free-7',
     title: 'Climate Change Solutions',
     author: 'Prof. James Green',
     category: 'Science',
