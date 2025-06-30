@@ -41,7 +41,7 @@ const additionalFreeBooks: Book[] = [
   author: 'Arthur Conan Doyle',
   category: 'Mystery',
   description: 'A collection of thrilling detective stories featuring the iconic Sherlock Holmes and Dr. Watson.',
-  isfeatured: false,
+  isfeatured: true,
   is_free_to_read: true,
   content: [
     { page: 1, text: 'To Sherlock Holmes she is always *the* woman. I have seldom heard him mention her under any other name.' },
