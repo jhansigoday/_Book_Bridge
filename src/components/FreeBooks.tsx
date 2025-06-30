@@ -35,55 +35,6 @@ const additionalFreeBooks: Book[] = [
       { page: 5, text: 'Chapter 3: Algorithms\n\nAn algorithm is a step-by-step procedure for solving a problem. Good algorithms are efficient, correct, and elegant. Understanding algorithm complexity helps you choose the right approach for your specific problem.\n\nTime complexity measures how the running time of an algorithm changes as the input size grows. Common time complexities include:\n\n• O(1) - Constant time: The algorithm takes the same amount of time regardless of input size\n• O(log n) - Logarithmic time: Time increases slowly as input size grows\n• O(n) - Linear time: Time increases proportionally with input size\n• O(n²) - Quadratic time: Time increases with the square of input size\n\nSorting algorithms demonstrate these concepts well. Bubble sort has O(n²) time complexity, while merge sort achieves O(n log n). For large datasets, this difference can mean the difference between seconds and hours of computation time.\n\nThe key to mastering algorithms is understanding when to apply each one and recognizing the trade-offs between time and space complexity.' }
     ]
   },
-  {
-  id: 'free-7',
-  title: 'The Adventures of Sherlock Holmes',
-  author: 'Arthur Conan Doyle',
-  category: 'Mystery',
-  description: 'A collection of thrilling detective stories featuring the iconic Sherlock Holmes and Dr. Watson.',
-  isfeatured: true,
-  is_free_to_read: true,
-  content: [
-    {
-      page: 1,
-      text: `To Sherlock Holmes she is always *the* woman. I have seldom heard him mention her under any other name. 
-In his eyes she eclipses and predominates the whole of her sex. It was not that he felt any emotion akin to love for Irene Adler. 
-All emotions, and that one particularly, were abhorrent to his cold, precise but admirably balanced mind. 
-He was, I take it, the most perfect reasoning and observing machine that the world has seen; 
-but as a lover he would have placed himself in a false position. He never spoke of the softer passions, save with a gibe and a sneer. 
-They were admirable things for the observer—excellent for drawing the veil from men’s motives and actions. 
-But for the trained reasoner to admit such intrusions into his own delicate and finely adjusted temperament was to introduce a distracting factor 
-which might throw a doubt upon all his mental results.`
-    },
-    {
-      page: 2,
-      text: `Grit in a sensitive instrument, or a crack in one of his own high-power lenses, would not be more disturbing than a strong emotion 
-in a nature such as his. And yet there was but one woman to him, and that woman was the late Irene Adler, of dubious and questionable memory.
-
-I had seen little of Holmes lately. My marriage had drifted us away from each other. My own complete happiness, 
-and the home-centred interests which rise up around the man who first finds himself master of his own establishment, 
-were sufficient to absorb all my attention, while Holmes, who loathed every form of society with his whole Bohemian soul, 
-remained in our lodgings in Baker Street, buried among his old books, and alternating from week to week 
-between cocaine and ambition, the drowsiness of the drug, and the fierce energy of his own keen nature.`
-    },
-    {
-      page: 3,
-      text: `He was still, as ever, deeply attracted by the study of crime, and occupied his immense faculties and extraordinary powers of observation 
-in following out those clues, and clearing up those mysteries which had been abandoned as hopeless by the official police. 
-From time to time I heard some vague account of his doings: of his summons to Odessa in the case of the Trepoff murder, 
-of his clearing up of the singular tragedy of the Atkinson brothers at Trincomalee, and finally of the mission 
-which he had accomplished so delicately and successfully for the reigning family of Holland. 
-Beyond these signs of his activity, however, which I merely shared with all the readers of the daily press, 
-I knew little of my former friend and companion.
-
-One night—it was on the twentieth of March, 1888—I was returning from a journey to a patient 
-(for I had now returned to civil practice), when my way led me through Baker Street. As I passed the well-remembered door, 
-which must always be associated in my mind with my wooing, and with the dark incidents of the Study in Scarlet, 
-I was seized with a keen desire to see Holmes again, and to know how he was employing his extraordinary powers.`
-    }
-  ]
-},
-
 
   {
     id: 'free-5',
