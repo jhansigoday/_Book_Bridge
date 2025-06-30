@@ -36,6 +36,20 @@ const additionalFreeBooks: Book[] = [
     ]
   },
   {
+  id: 'free-6',
+    title: 'Climate Change Solutions',
+    author: 'Prof. James Green',
+    category: 'Science',
+    description: 'An accessible guide to understanding climate change and the innovative solutions being developed to address this global challenge.',
+    isfeatured: true,
+    is_free_to_read: true,
+    content: [
+      {page: 1,text: 'hello    ,.......'},
+      {page: 2,text: 'hello    ,.......'},
+      {page: 3,text: 'hello    ,.......'},
+    ]
+  },
+  {
     id: 'free-5',
     title: 'Mindful Living',
     author: 'Dr. Maya Patel',
