@@ -48,7 +48,7 @@ const additionalFreeBooks: Book[] = [
     { page: 2, text: 'In his eyes she eclipses and predominates the whole of her sex.' },
     { page: 3, text: 'And yet there was but one woman to him, and that woman was the late Irene Adler, of dubious and questionable memory.' }
   ]
-}
+},
 
   {
     id: 'free-5',
