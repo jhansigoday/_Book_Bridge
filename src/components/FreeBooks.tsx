@@ -82,7 +82,7 @@ which must always be associated in my mind with my wooing, and with the dark inc
 I was seized with a keen desire to see Holmes again, and to know how he was employing his extraordinary powers.`
     }
   ]
-}
+},
 
 
   {
