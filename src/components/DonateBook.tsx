@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -84,26 +83,83 @@ export const DonateBook = () => {
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
+          console.log('Detected coordinates:', { latitude, longitude });
           
-          // Using a reverse geocoding service (OpenStreetMap Nominatim)
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`
-          );
+          // Using multiple geocoding services for better accuracy and English results
+          let locationString = '';
           
-          if (!response.ok) {
-            throw new Error('Failed to get location details');
+          try {
+            // Try Google Maps Geocoding API first (more accurate)
+            const googleResponse = await fetch(
+              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&language=en&key=AIzaSyDummy`
+            );
+            
+            if (!googleResponse.ok) {
+              throw new Error('Google API not available');
+            }
+            
+            const googleData = await googleResponse.json();
+            if (googleData.results && googleData.results.length > 0) {
+              const components = googleData.results[0].address_components;
+              const area = components.find(c => c.types.includes('sublocality') || c.types.includes('neighborhood'))?.long_name;
+              const city = components.find(c => c.types.includes('locality'))?.long_name;
+              const district = components.find(c => c.types.includes('administrative_area_level_2'))?.long_name;
+              const state = components.find(c => c.types.includes('administrative_area_level_1'))?.long_name;
+              
+              locationString = [area, city || district, state].filter(Boolean).join(', ');
+            }
+          } catch (googleError) {
+            console.log('Google API failed, trying OpenStreetMap...');
+            
+            // Fallback to OpenStreetMap Nominatim with English language preference
+            const osmResponse = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14&addressdetails=1&accept-language=en&extratags=1`
+            );
+            
+            if (!osmResponse.ok) {
+              throw new Error('Failed to get location details from OSM');
+            }
+            
+            const osmData = await osmResponse.json();
+            console.log('OSM Response:', osmData);
+            
+            const address = osmData.address;
+            
+            // More precise location extraction with better English handling
+            const area = address.suburb || 
+                        address.neighbourhood || 
+                        address.village || 
+                        address.hamlet || 
+                        address.residential ||
+                        address.quarter ||
+                        address.town;
+                        
+            const city = address.city || 
+                        address.town || 
+                        address.municipality ||
+                        address.county;
+                        
+            const district = address.state_district || 
+                           address.county || 
+                           address.district;
+                           
+            const state = address.state;
+            
+            // Build location string with available components
+            const locationParts = [];
+            if (area && area !== city && area !== district) locationParts.push(area);
+            if (city && city !== district) locationParts.push(city);
+            else if (district) locationParts.push(district);
+            if (state) locationParts.push(state);
+            
+            locationString = locationParts.join(', ');
           }
           
-          const data = await response.json();
-          const address = data.address;
+          if (!locationString) {
+            throw new Error('Could not determine location details');
+          }
           
-          // Format: area, district, state
-          const locationString = [
-            address.suburb || address.neighbourhood || address.village || address.town,
-            address.city || address.county || address.state_district,
-            address.state
-          ].filter(Boolean).join(', ');
-          
+          console.log('Final location string:', locationString);
           handleInputChange('donor_location', locationString);
           
           toast({
@@ -114,7 +170,7 @@ export const DonateBook = () => {
           console.error('Error getting location details:', error);
           toast({
             title: "Location detection failed",
-            description: "Could not get detailed location information.",
+            description: "Could not get detailed location information. Please enter your location manually.",
             variant: "destructive",
           });
         }
@@ -122,17 +178,31 @@ export const DonateBook = () => {
       },
       (error) => {
         console.error('Geolocation error:', error);
+        let errorMessage = "Please allow location access or enter your location manually.";
+        
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Location access was denied. Please allow location access or enter manually.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Location information is unavailable. Please enter your location manually.";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Location request timed out. Please try again or enter manually.";
+            break;
+        }
+        
         toast({
-          title: "Location access denied",
-          description: "Please allow location access or enter your location manually.",
+          title: "Location access failed",
+          description: errorMessage,
           variant: "destructive",
         });
         setLocationLoading(false);
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
+        timeout: 15000,
+        maximumAge: 60000
       }
     );
   };

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +31,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
-  const [pendingRequests, setPendingRequests] = useState(0);
+  const [totalRequestsCount, setTotalRequestsCount] = useState(0);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [lastVisitedRequests, setLastVisitedRequests] = useState<string | null>(null);
   const [newActivityCount, setNewActivityCount] = useState(0);
   const { toast } = useToast();
@@ -41,7 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
-        fetchPendingRequests(session.user.id);
+        fetchRequestCounts(session.user.id);
         checkForNewActivity(session.user.id);
         
         // Load last visited requests timestamp
@@ -55,7 +57,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
-        fetchPendingRequests(session.user.id);
+        fetchRequestCounts(session.user.id);
         checkForNewActivity(session.user.id);
         
         // Load last visited requests timestamp
@@ -63,7 +65,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
         setLastVisitedRequests(lastVisited);
       } else {
         setProfile(null);
-        setPendingRequests(0);
+        setTotalRequestsCount(0);
+        setPendingRequestsCount(0);
         setLastVisitedRequests(null);
         setNewActivityCount(0);
       }
@@ -86,7 +89,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
           table: 'book_requests'
         },
         () => {
-          fetchPendingRequests(user.id);
+          fetchRequestCounts(user.id);
           checkForNewActivity(user.id);
         }
       )
@@ -132,33 +135,33 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
     setProfile(data);
   };
 
-  const fetchPendingRequests = async (userId: string) => {
+  const fetchRequestCounts = async (userId: string) => {
     try {
-      // Get last visited requests timestamp
-      const lastVisited = localStorage.getItem(`lastVisitedRequests_${userId}`);
-      
-      // Count pending requests that I received (for my donated books) created after last visit
-      let query = supabase
+      // Get total count of all requests (sent + received)
+      const { data: sentRequests } = await supabase
         .from('book_requests')
-        .select('id, created_at')
+        .select('id')
+        .eq('requester_id', userId);
+
+      const { data: receivedRequests } = await supabase
+        .from('book_requests')
+        .select('id')
+        .eq('donor_id', userId);
+
+      const totalCount = (sentRequests?.length || 0) + (receivedRequests?.length || 0);
+      setTotalRequestsCount(totalCount);
+
+      // Get count of pending requests that I received (for my donated books)
+      const { data: pendingReceived } = await supabase
+        .from('book_requests')
+        .select('id')
         .eq('donor_id', userId)
         .eq('status', 'pending');
 
-      // If user has visited requests page before, only count requests created after that visit
-      if (lastVisited) {
-        query = query.gt('created_at', lastVisited);
-      }
+      setPendingRequestsCount(pendingReceived?.length || 0);
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching pending requests:', error);
-        return;
-      }
-
-      setPendingRequests(data?.length || 0);
     } catch (error) {
-      console.error('Error in fetchPendingRequests:', error);
+      console.error('Error fetching request counts:', error);
     }
   };
 
@@ -227,10 +230,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
   const handlePageChange = (page: string) => {
     onPageChange(page);
     
-    // If navigating to requests page, refresh pending count after a short delay
+    // If navigating to requests page, refresh counts after a short delay
     if (page === 'requests' && user) {
       setTimeout(() => {
-        fetchPendingRequests(user.id);
+        fetchRequestCounts(user.id);
         setNewActivityCount(0);
       }, 100);
     }
@@ -284,12 +287,20 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
                     >
                       <MessageSquare className="h-4 w-4 mr-2" />
                       My Requests
-                      {(pendingRequests > 0 || newActivityCount > 0) && (
+                      {totalRequestsCount > 0 && (
+                        <Badge 
+                          variant="secondary" 
+                          className="ml-1 h-5 px-1.5 text-xs"
+                        >
+                          {totalRequestsCount}
+                        </Badge>
+                      )}
+                      {(pendingRequestsCount > 0 || newActivityCount > 0) && (
                         <Badge 
                           variant="destructive" 
                           className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs"
                         >
-                          {pendingRequests > 0 ? pendingRequests : newActivityCount}
+                          {pendingRequestsCount > 0 ? pendingRequestsCount : newActivityCount}
                         </Badge>
                       )}
                     </Button>
@@ -339,4 +350,3 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
     </>
   );
 };
-// BookBridge update
