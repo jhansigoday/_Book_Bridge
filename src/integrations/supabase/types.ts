@@ -58,11 +58,15 @@ export type Database = {
           coverurl: string | null
           createdat: string | null
           description: string | null
+          donor_location: string | null
           donorid: string | null
           id: string
           is_free_to_read: boolean | null
           isfeatured: boolean | null
+          price: number | null
+          sharing_type: string | null
           status: string | null
+          time_span_days: number | null
           title: string
         }
         Insert: {
@@ -72,11 +76,15 @@ export type Database = {
           coverurl?: string | null
           createdat?: string | null
           description?: string | null
+          donor_location?: string | null
           donorid?: string | null
           id?: string
           is_free_to_read?: boolean | null
           isfeatured?: boolean | null
+          price?: number | null
+          sharing_type?: string | null
           status?: string | null
+          time_span_days?: number | null
           title: string
         }
         Update: {
@@ -86,11 +94,15 @@ export type Database = {
           coverurl?: string | null
           createdat?: string | null
           description?: string | null
+          donor_location?: string | null
           donorid?: string | null
           id?: string
           is_free_to_read?: boolean | null
           isfeatured?: boolean | null
+          price?: number | null
+          sharing_type?: string | null
           status?: string | null
+          time_span_days?: number | null
           title?: string
         }
         Relationships: []

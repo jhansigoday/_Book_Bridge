@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { BookOpen, Heart, Upload } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { BookOpen, Heart, Upload, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,9 +19,14 @@ export const DonateBook = () => {
     category: '',
     description: '',
     condition: 'good',
-    is_free_to_read: false
+    is_free_to_read: false,
+    sharing_type: 'free_donation',
+    price: '',
+    time_span_days: '',
+    donor_location: ''
   });
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
   const { toast } = useToast();
 
   // Valid categories that match the database constraint
@@ -61,6 +67,76 @@ export const DonateBook = () => {
     }));
   };
 
+  const handleLocationDetection = () => {
+    setLocationLoading(true);
+    
+    if (!navigator.geolocation) {
+      toast({
+        title: "Geolocation not supported",
+        description: "Your browser doesn't support geolocation.",
+        variant: "destructive",
+      });
+      setLocationLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          
+          // Using a reverse geocoding service (OpenStreetMap Nominatim)
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`
+          );
+          
+          if (!response.ok) {
+            throw new Error('Failed to get location details');
+          }
+          
+          const data = await response.json();
+          const address = data.address;
+          
+          // Format: area, district, state
+          const locationString = [
+            address.suburb || address.neighbourhood || address.village || address.town,
+            address.city || address.county || address.state_district,
+            address.state
+          ].filter(Boolean).join(', ');
+          
+          handleInputChange('donor_location', locationString);
+          
+          toast({
+            title: "Location detected",
+            description: `Location set to: ${locationString}`,
+          });
+        } catch (error) {
+          console.error('Error getting location details:', error);
+          toast({
+            title: "Location detection failed",
+            description: "Could not get detailed location information.",
+            variant: "destructive",
+          });
+        }
+        setLocationLoading(false);
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        toast({
+          title: "Location access denied",
+          description: "Please allow location access or enter your location manually.",
+          variant: "destructive",
+        });
+        setLocationLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -68,6 +144,24 @@ export const DonateBook = () => {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields (title, author, and category).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.sharing_type === 'sell_book' && (!formData.price || parseFloat(formData.price) <= 0)) {
+      toast({
+        title: "Missing Price",
+        description: "Please enter a valid price for the book.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.sharing_type === 'donate_period' && (!formData.time_span_days || parseInt(formData.time_span_days) <= 0)) {
+      toast({
+        title: "Missing Time Span",
+        description: "Please enter a valid time span in days.",
         variant: "destructive",
       });
       return;
@@ -87,29 +181,26 @@ export const DonateBook = () => {
         return;
       }
 
-      console.log('Attempting to insert book with data:', {
+      const bookData = {
         title: formData.title.trim(),
         author: formData.author.trim(),
         category: formData.category,
         description: formData.description.trim() || null,
         condition: formData.condition,
         is_free_to_read: formData.is_free_to_read,
+        sharing_type: formData.sharing_type,
+        price: formData.sharing_type === 'sell_book' ? parseFloat(formData.price) : null,
+        time_span_days: formData.sharing_type === 'donate_period' ? parseInt(formData.time_span_days) : null,
+        donor_location: formData.donor_location.trim() || null,
         donorid: user.id,
         status: 'available'
-      });
+      };
+
+      console.log('Attempting to insert book with data:', bookData);
 
       const { data: insertedBook, error } = await supabase
         .from('books')
-        .insert([{
-          title: formData.title.trim(),
-          author: formData.author.trim(),
-          category: formData.category,
-          description: formData.description.trim() || null,
-          condition: formData.condition,
-          is_free_to_read: formData.is_free_to_read,
-          donorid: user.id,
-          status: 'available'
-        }])
+        .insert([bookData])
         .select();
 
       if (error) {
@@ -148,7 +239,11 @@ export const DonateBook = () => {
         category: '',
         description: '',
         condition: 'good',
-        is_free_to_read: false
+        is_free_to_read: false,
+        sharing_type: 'free_donation',
+        price: '',
+        time_span_days: '',
+        donor_location: ''
       });
 
     } catch (error: any) {
@@ -245,6 +340,91 @@ export const DonateBook = () => {
               </div>
 
               <div>
+                <Label>How would you like to share this book? *</Label>
+                <RadioGroup 
+                  value={formData.sharing_type} 
+                  onValueChange={(value) => handleInputChange('sharing_type', value)}
+                  className="mt-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="free_donation" id="free_donation" />
+                    <Label htmlFor="free_donation">Free Donation</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="sell_book" id="sell_book" />
+                    <Label htmlFor="sell_book">Sell Book</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="donate_period" id="donate_period" />
+                    <Label htmlFor="donate_period">Donate for a Period of Time</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {formData.sharing_type === 'sell_book' && (
+                <div>
+                  <Label htmlFor="price">Price (₹) *</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={(e) => handleInputChange('price', e.target.value)}
+                    placeholder="Enter price in rupees"
+                    required
+                  />
+                </div>
+              )}
+
+              {formData.sharing_type === 'donate_period' && (
+                <div>
+                  <Label htmlFor="time_span">Time Span (Days) *</Label>
+                  <Input
+                    id="time_span"
+                    type="number"
+                    min="1"
+                    value={formData.time_span_days}
+                    onChange={(e) => handleInputChange('time_span_days', e.target.value)}
+                    placeholder="Enter number of days"
+                    required
+                  />
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="location">Location</Label>
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    id="location"
+                    type="text"
+                    value={formData.donor_location}
+                    onChange={(e) => handleInputChange('donor_location', e.target.value)}
+                    placeholder="Enter your location (area, district, state)"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleLocationDetection}
+                    disabled={locationLoading}
+                    className="whitespace-nowrap"
+                  >
+                    {locationLoading ? (
+                      <>
+                        <MapPin className="h-4 w-4 mr-2 animate-spin" />
+                        Getting...
+                      </>
+                    ) : (
+                      <>
+                        <MapPin className="h-4 w-4 mr-2" />
+                        Add Location
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div>
                 <Label htmlFor="description">Description (Optional)</Label>
                 <Textarea
                   id="description"
@@ -276,6 +456,12 @@ export const DonateBook = () => {
                   {formData.is_free_to_read && (
                     <li>• Readers can also access your book online for free reading</li>
                   )}
+                  {formData.sharing_type === 'sell_book' && (
+                    <li>• Buyers will pay the specified price for your book</li>
+                  )}
+                  {formData.sharing_type === 'donate_period' && (
+                    <li>• The book will be returned to you after the specified time period</li>
+                  )}
                 </ul>
               </div>
 
@@ -303,4 +489,3 @@ export const DonateBook = () => {
     </div>
   );
 };
-// BookBridge update

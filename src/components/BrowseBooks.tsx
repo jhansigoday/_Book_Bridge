@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { BookOpen, User, Search, MessageSquare, RefreshCw } from 'lucide-react';
+import { BookOpen, User, Search, MessageSquare, RefreshCw, MapPin, IndianRupee, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,6 +21,10 @@ interface Book {
   condition: string;
   donorid: string;
   status: string;
+  sharing_type: string;
+  price: number | null;
+  time_span_days: number | null;
+  donor_location: string | null;
   profiles: {
     full_name: string;
   } | null;
@@ -33,6 +38,7 @@ export const BrowseBooks = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [conditionFilter, setConditionFilter] = useState('All');
+  const [sharingTypeFilter, setSharingTypeFilter] = useState('All');
   const [user, setUser] = useState<any>(null);
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
@@ -104,7 +110,7 @@ export const BrowseBooks = () => {
 
   useEffect(() => {
     filterBooks();
-  }, [books, searchTerm, categoryFilter, conditionFilter]);
+  }, [books, searchTerm, categoryFilter, conditionFilter, sharingTypeFilter]);
 
   const fetchUserAndBooks = async () => {
     try {
@@ -207,6 +213,10 @@ export const BrowseBooks = () => {
       filtered = filtered.filter(book => book.condition === conditionFilter);
     }
 
+    if (sharingTypeFilter !== 'All') {
+      filtered = filtered.filter(book => book.sharing_type === sharingTypeFilter);
+    }
+
     setFilteredBooks(filtered);
   };
 
@@ -302,8 +312,22 @@ export const BrowseBooks = () => {
     }
   };
 
+  const getSharingTypeDisplay = (book: Book) => {
+    switch (book.sharing_type) {
+      case 'free_donation':
+        return { label: 'Free Donation', color: 'bg-green-500' };
+      case 'sell_book':
+        return { label: `₹${book.price}`, color: 'bg-blue-500' };
+      case 'donate_period':
+        return { label: `${book.time_span_days} days`, color: 'bg-orange-500' };
+      default:
+        return { label: 'Free Donation', color: 'bg-green-500' };
+    }
+  };
+
   const categories = ['All', ...Array.from(new Set(books.map(book => book.category)))];
   const conditions = ['All', 'excellent', 'good', 'fair', 'poor'];
+  const sharingTypes = ['All', 'free_donation', 'sell_book', 'donate_period'];
 
   if (loading) {
     return (
@@ -368,6 +392,21 @@ export const BrowseBooks = () => {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={sharingTypeFilter} onValueChange={setSharingTypeFilter}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Sharing Type" />
+              </SelectTrigger>
+              <SelectContent>
+                {sharingTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type === 'All' ? 'All' : 
+                     type === 'free_donation' ? 'Free' :
+                     type === 'sell_book' ? 'For Sale' :
+                     type === 'donate_period' ? 'Period' : type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button 
               variant="outline" 
               size="default"
@@ -382,42 +421,58 @@ export const BrowseBooks = () => {
 
         {/* Books Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredBooks.map((book) => (
-            <Card key={book.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg mb-2 line-clamp-2">{book.title}</CardTitle>
-                <div className="flex items-center text-muted-foreground mb-2">
-                  <User className="h-4 w-4 mr-1" />
-                  <span className="text-sm">{book.author}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">
-                    {book.category}
-                  </Badge>
-                  <Badge variant="outline" className="capitalize">
-                    {book.condition}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-muted-foreground text-sm mb-4 line-clamp-3">
-                  {book.description}
-                </p>
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-muted-foreground">
-                    <span>Donated by: {book.profiles?.full_name || 'Anonymous'}</span>
+          {filteredBooks.map((book) => {
+            const sharingDisplay = getSharingTypeDisplay(book);
+            return (
+              <Card key={book.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg mb-2 line-clamp-2">{book.title}</CardTitle>
+                  <div className="flex items-center text-muted-foreground mb-2">
+                    <User className="h-4 w-4 mr-1" />
+                    <span className="text-sm">{book.author}</span>
                   </div>
-                  <Button 
-                    size="sm"
-                    onClick={() => handleRequestBook(book)}
-                  >
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Request
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="secondary">
+                      {book.category}
+                    </Badge>
+                    <Badge variant="outline" className="capitalize">
+                      {book.condition}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className={`text-white ${sharingDisplay.color}`}>
+                      {book.sharing_type === 'sell_book' && <IndianRupee className="h-3 w-3 mr-1" />}
+                      {book.sharing_type === 'donate_period' && <Calendar className="h-3 w-3 mr-1" />}
+                      {sharingDisplay.label}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-muted-foreground text-sm mb-3 line-clamp-3">
+                    {book.description}
+                  </p>
+                  {book.donor_location && (
+                    <div className="flex items-center text-muted-foreground text-xs mb-3">
+                      <MapPin className="h-3 w-3 mr-1" />
+                      <span className="line-clamp-1">{book.donor_location}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground">
+                      <span>Donated by: {book.profiles?.full_name || 'Anonymous'}</span>
+                    </div>
+                    <Button 
+                      size="sm"
+                      onClick={() => handleRequestBook(book)}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Request
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {filteredBooks.length === 0 && (
@@ -448,6 +503,24 @@ export const BrowseBooks = () => {
                 <p className="text-sm text-muted-foreground">
                   Condition: {selectedBook.condition}
                 </p>
+                <div className="flex items-center gap-2 mt-2">
+                  {(() => {
+                    const display = getSharingTypeDisplay(selectedBook);
+                    return (
+                      <Badge className={`text-white ${display.color}`}>
+                        {selectedBook.sharing_type === 'sell_book' && <IndianRupee className="h-3 w-3 mr-1" />}
+                        {selectedBook.sharing_type === 'donate_period' && <Calendar className="h-3 w-3 mr-1" />}
+                        {display.label}
+                      </Badge>
+                    );
+                  })()}
+                </div>
+                {selectedBook.donor_location && (
+                  <div className="flex items-center text-muted-foreground text-sm mt-1">
+                    <MapPin className="h-3 w-3 mr-1" />
+                    <span>{selectedBook.donor_location}</span>
+                  </div>
+                )}
                 <p className="text-sm text-muted-foreground">
                   Donor: {selectedBook.profiles?.full_name || 'Anonymous'}
                 </p>
@@ -477,4 +550,3 @@ export const BrowseBooks = () => {
     </div>
   );
 };
-// BookBridge update
