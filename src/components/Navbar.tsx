@@ -32,9 +32,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [totalRequestsCount, setTotalRequestsCount] = useState(0);
-  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [newPendingRequestsCount, setNewPendingRequestsCount] = useState(0);
   const [lastVisitedRequests, setLastVisitedRequests] = useState<string | null>(null);
-  const [newActivityCount, setNewActivityCount] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -44,11 +43,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
       if (session?.user) {
         fetchProfile(session.user.id);
         fetchRequestCounts(session.user.id);
-        checkForNewActivity(session.user.id);
         
         // Load last visited requests timestamp
         const lastVisited = localStorage.getItem(`lastVisitedRequests_${session.user.id}`);
         setLastVisitedRequests(lastVisited);
+        checkForNewPendingRequests(session.user.id, lastVisited);
       }
     });
 
@@ -58,17 +57,16 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
       if (session?.user) {
         fetchProfile(session.user.id);
         fetchRequestCounts(session.user.id);
-        checkForNewActivity(session.user.id);
         
         // Load last visited requests timestamp
         const lastVisited = localStorage.getItem(`lastVisitedRequests_${session.user.id}`);
         setLastVisitedRequests(lastVisited);
+        checkForNewPendingRequests(session.user.id, lastVisited);
       } else {
         setProfile(null);
         setTotalRequestsCount(0);
-        setPendingRequestsCount(0);
+        setNewPendingRequestsCount(0);
         setLastVisitedRequests(null);
-        setNewActivityCount(0);
       }
     });
 
@@ -90,31 +88,15 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
         },
         () => {
           fetchRequestCounts(user.id);
-          checkForNewActivity(user.id);
-        }
-      )
-      .subscribe();
-
-    const contactExchangesChannel = supabase
-      .channel('navbar-contact-exchanges')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'contact_exchanges'
-        },
-        () => {
-          checkForNewActivity(user.id);
+          checkForNewPendingRequests(user.id, lastVisitedRequests);
         }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(requestsChannel);
-      supabase.removeChannel(contactExchangesChannel);
     };
-  }, [user]);
+  }, [user, lastVisitedRequests]);
 
   // Track when user visits requests page
   useEffect(() => {
@@ -122,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
       const now = new Date().toISOString();
       localStorage.setItem(`lastVisitedRequests_${user.id}`, now);
       setLastVisitedRequests(now);
-      setNewActivityCount(0);
+      setNewPendingRequestsCount(0);
     }
   }, [currentPage, user]);
 
@@ -151,68 +133,36 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
       const totalCount = (sentRequests?.length || 0) + (receivedRequests?.length || 0);
       setTotalRequestsCount(totalCount);
 
-      // Get count of pending requests that I received (for my donated books)
-      const { data: pendingReceived } = await supabase
-        .from('book_requests')
-        .select('id')
-        .eq('donor_id', userId)
-        .eq('status', 'pending');
-
-      setPendingRequestsCount(pendingReceived?.length || 0);
-
     } catch (error) {
       console.error('Error fetching request counts:', error);
     }
   };
 
-  const checkForNewActivity = async (userId: string) => {
+  const checkForNewPendingRequests = async (userId: string, lastVisited: string | null) => {
     try {
-      const lastVisited = localStorage.getItem(`lastVisitedRequests_${userId}`);
       if (!lastVisited) {
-        setNewActivityCount(1);
+        // If never visited, check for any pending requests
+        const { data: pendingRequests } = await supabase
+          .from('book_requests')
+          .select('id')
+          .eq('donor_id', userId)
+          .eq('status', 'pending');
+
+        setNewPendingRequestsCount(pendingRequests?.length || 0);
         return;
       }
 
-      let totalCount = 0;
-
-      // Check for new requests (both sent and received)
-      const { data: newRequests } = await supabase
+      // Check for new pending requests since last visit
+      const { data: newPendingRequests } = await supabase
         .from('book_requests')
         .select('id')
-        .or(`requester_id.eq.${userId},donor_id.eq.${userId}`)
+        .eq('donor_id', userId)
+        .eq('status', 'pending')
         .gt('created_at', lastVisited);
 
-      totalCount += newRequests?.length || 0;
-
-      // Check for request status updates
-      const { data: updatedRequests } = await supabase
-        .from('book_requests')
-        .select('id')
-        .or(`requester_id.eq.${userId},donor_id.eq.${userId}`)
-        .gt('updated_at', lastVisited)
-        .neq('status', 'pending');
-
-      totalCount += updatedRequests?.length || 0;
-
-      // Check for new contact exchanges
-      const { data: contactExchanges } = await supabase
-        .from('contact_exchanges')
-        .select(`
-          id,
-          request_id,
-          book_requests!inner(
-            requester_id,
-            donor_id
-          )
-        `)
-        .or(`book_requests.requester_id.eq.${userId},book_requests.donor_id.eq.${userId}`)
-        .gt('created_at', lastVisited);
-
-      totalCount += contactExchanges?.length || 0;
-
-      setNewActivityCount(totalCount);
+      setNewPendingRequestsCount(newPendingRequests?.length || 0);
     } catch (error) {
-      console.error('Error checking for new activity:', error);
+      console.error('Error checking for new pending requests:', error);
     }
   };
 
@@ -234,7 +184,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
     if (page === 'requests' && user) {
       setTimeout(() => {
         fetchRequestCounts(user.id);
-        setNewActivityCount(0);
+        setNewPendingRequestsCount(0);
       }, 100);
     }
   };
@@ -295,12 +245,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
                           {totalRequestsCount}
                         </Badge>
                       )}
-                      {(pendingRequestsCount > 0 || newActivityCount > 0) && (
+                      {newPendingRequestsCount > 0 && (
                         <Badge 
                           variant="destructive" 
                           className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs"
                         >
-                          {pendingRequestsCount > 0 ? pendingRequestsCount : newActivityCount}
+                          {newPendingRequestsCount}
                         </Badge>
                       )}
                     </Button>

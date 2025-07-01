@@ -85,92 +85,85 @@ export const DonateBook = () => {
           const { latitude, longitude } = position.coords;
           console.log('Detected coordinates:', { latitude, longitude });
           
-          // Using multiple geocoding services for better accuracy and English results
-          let locationString = '';
+          // Use OpenStreetMap Nominatim with better parameters for accuracy
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=12&addressdetails=1&accept-language=en&extratags=1&namedetails=1`
+          );
           
-          try {
-            // Try Google Maps Geocoding API first (more accurate)
-            const googleResponse = await fetch(
-              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&language=en&key=AIzaSyDummy`
-            );
-            
-            if (!googleResponse.ok) {
-              throw new Error('Google API not available');
-            }
-            
-            const googleData = await googleResponse.json();
-            if (googleData.results && googleData.results.length > 0) {
-              const components = googleData.results[0].address_components;
-              const area = components.find(c => c.types.includes('sublocality') || c.types.includes('neighborhood'))?.long_name;
-              const city = components.find(c => c.types.includes('locality'))?.long_name;
-              const district = components.find(c => c.types.includes('administrative_area_level_2'))?.long_name;
-              const state = components.find(c => c.types.includes('administrative_area_level_1'))?.long_name;
-              
-              locationString = [area, city || district, state].filter(Boolean).join(', ');
-            }
-          } catch (googleError) {
-            console.log('Google API failed, trying OpenStreetMap...');
-            
-            // Fallback to OpenStreetMap Nominatim with English language preference
-            const osmResponse = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14&addressdetails=1&accept-language=en&extratags=1`
-            );
-            
-            if (!osmResponse.ok) {
-              throw new Error('Failed to get location details from OSM');
-            }
-            
-            const osmData = await osmResponse.json();
-            console.log('OSM Response:', osmData);
-            
-            const address = osmData.address;
-            
-            // More precise location extraction with better English handling
-            const area = address.suburb || 
-                        address.neighbourhood || 
-                        address.village || 
-                        address.hamlet || 
-                        address.residential ||
-                        address.quarter ||
-                        address.town;
-                        
-            const city = address.city || 
-                        address.town || 
-                        address.municipality ||
-                        address.county;
-                        
-            const district = address.state_district || 
-                           address.county || 
-                           address.district;
-                           
-            const state = address.state;
-            
-            // Build location string with available components
-            const locationParts = [];
-            if (area && area !== city && area !== district) locationParts.push(area);
-            if (city && city !== district) locationParts.push(city);
-            else if (district) locationParts.push(district);
-            if (state) locationParts.push(state);
-            
-            locationString = locationParts.join(', ');
+          if (!response.ok) {
+            throw new Error('Failed to get location details');
           }
           
-          if (!locationString) {
-            throw new Error('Could not determine location details');
+          const data = await response.json();
+          console.log('Location response:', data);
+          
+          if (!data || !data.address) {
+            throw new Error('No address data received');
           }
           
+          const address = data.address;
+          
+          // Build location string with proper hierarchy in English
+          const locationParts = [];
+          
+          // Add neighborhood/area (most specific)
+          if (address.neighbourhood) {
+            locationParts.push(address.neighbourhood);
+          } else if (address.suburb) {
+            locationParts.push(address.suburb);
+          } else if (address.residential) {
+            locationParts.push(address.residential);
+          } else if (address.hamlet) {
+            locationParts.push(address.hamlet);
+          }
+          
+          // Add city/town (medium specificity)
+          if (address.city) {
+            locationParts.push(address.city);
+          } else if (address.town) {
+            locationParts.push(address.town);
+          } else if (address.village) {
+            locationParts.push(address.village);
+          }
+          
+          // Add district if different from city
+          if (address.state_district && !locationParts.includes(address.state_district)) {
+            locationParts.push(address.state_district);
+          } else if (address.county && !locationParts.includes(address.county)) {
+            locationParts.push(address.county);
+          }
+          
+          // Add state (least specific)
+          if (address.state) {
+            locationParts.push(address.state);
+          }
+          
+          // Ensure we have at least some location data
+          if (locationParts.length === 0) {
+            // Fallback to display_name parsing
+            const displayName = data.display_name || '';
+            const parts = displayName.split(',').map(part => part.trim());
+            if (parts.length >= 2) {
+              locationParts.push(parts[0], parts[1]); // Take first two parts
+            } else {
+              locationParts.push('Location detected');
+            }
+          }
+          
+          const locationString = locationParts.join(', ');
           console.log('Final location string:', locationString);
+          
           handleInputChange('donor_location', locationString);
           
           toast({
-            title: "Location detected",
+            title: "Location detected successfully",
             description: `Location set to: ${locationString}`,
           });
         } catch (error) {
           console.error('Error getting location details:', error);
           toast({
             title: "Location detection failed",
-            description: "Could not get detailed location information. Please enter your location manually.",
+            description: "Could not get location information. Please enter your location manually.",
             variant: "destructive",
           });
         }
@@ -182,13 +175,13 @@ export const DonateBook = () => {
         
         switch(error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = "Location access was denied. Please allow location access or enter manually.";
+            errorMessage = "Location access was denied. Please allow location access and try again.";
             break;
           case error.POSITION_UNAVAILABLE:
             errorMessage = "Location information is unavailable. Please enter your location manually.";
             break;
           case error.TIMEOUT:
-            errorMessage = "Location request timed out. Please try again or enter manually.";
+            errorMessage = "Location request timed out. Please try again.";
             break;
         }
         
@@ -201,8 +194,8 @@ export const DonateBook = () => {
       },
       {
         enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 60000
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
       }
     );
   };
@@ -470,7 +463,7 @@ export const DonateBook = () => {
                     type="text"
                     value={formData.donor_location}
                     onChange={(e) => handleInputChange('donor_location', e.target.value)}
-                    placeholder="Enter your location (area, district, state)"
+                    placeholder="Enter your location (area, city, state)"
                   />
                   <Button
                     type="button"
@@ -482,12 +475,12 @@ export const DonateBook = () => {
                     {locationLoading ? (
                       <>
                         <MapPin className="h-4 w-4 mr-2 animate-spin" />
-                        Getting...
+                        Detecting...
                       </>
                     ) : (
                       <>
                         <MapPin className="h-4 w-4 mr-2" />
-                        Add Location
+                        Detect Location
                       </>
                     )}
                   </Button>
