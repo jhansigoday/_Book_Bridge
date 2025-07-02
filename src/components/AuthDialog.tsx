@@ -70,7 +70,21 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, onAuthS
     setLocationLoading(false);
   };
 
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleSignUp = async () => {
+    if (!validateEmail(email)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({

@@ -237,14 +237,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
                     >
                       <MessageSquare className="h-4 w-4 mr-2" />
                       My Requests
-                      {totalRequestsCount > 0 && (
-                        <Badge 
-                          variant="secondary" 
-                          className="ml-1 h-5 px-1.5 text-xs"
-                        >
-                          {totalRequestsCount}
-                        </Badge>
-                      )}
                       {newPendingRequestsCount > 0 && (
                         <Badge 
                           variant="destructive" 
