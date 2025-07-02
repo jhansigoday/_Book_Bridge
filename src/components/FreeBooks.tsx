@@ -19,7 +19,6 @@ interface Book {
 }
 
 const additionalFreeBooks: Book[] = [
- [
   {
     id: 'free-4',
     title: 'The Art of Programming',
