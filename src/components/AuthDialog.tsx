@@ -75,11 +75,25 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, onAuthS
     return emailRegex.test(email);
   };
 
+  const validatePhone = (phone: string) => {
+    const phoneDigits = phone.replace(/\D/g, ''); // Remove all non-digit characters
+    return phoneDigits.length >= 10;
+  };
+
   const handleSignUp = async () => {
     if (!validateEmail(email)) {
       toast({
         title: "Invalid email",
         description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (phone && !validatePhone(phone)) {
+      toast({
+        title: "Invalid phone number",
+        description: "Phone number does not exist. Please enter at least 10 digits.",
         variant: "destructive",
       });
       return;
