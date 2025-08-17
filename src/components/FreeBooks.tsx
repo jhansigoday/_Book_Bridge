@@ -148,14 +148,22 @@ export const FreeBooks = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Platform Title - Highlighted Section */}
+      <div className="bg-gradient-to-r from-primary to-primary/80 text-white py-6">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Digital Book Exchange Platform using Community Sharing Model</h1>
+          <p className="text-white/90 text-sm md:text-base">Connect, Share, and Discover Amazing Books Together</p>
+        </div>
+      </div>
+      
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-8">
         <div className="container mx-auto px-4">
           <div className="text-center">
-            <h1 className="text-4xl font-bold mb-2 flex items-center justify-center">
+            <h2 className="text-4xl font-bold mb-2 flex items-center justify-center">
               <Library className="h-10 w-10 mr-3" />
               Free Books
-            </h1>
+            </h2>
             <p className="text-xl opacity-90">Read Amazing Books Completely Free</p>
             <p className="mt-2 opacity-75">Discover our collection of free books available for instant reading</p>
           </div>

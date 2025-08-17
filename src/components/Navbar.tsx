@@ -197,10 +197,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
             <div className="flex items-center space-x-8">
               <button
                 onClick={() => handlePageChange('free-books')}
-                className="flex items-center space-x-2 text-xl font-bold text-primary"
+                className="flex items-center space-x-2 text-sm font-bold text-primary"
               >
-                <BookOpen className="h-6 w-6" />
-                <span>Digital Book Exchange Platform using Community Sharing Model</span>
+                <BookOpen className="h-5 w-5" />
+                <span className="hidden sm:block">Digital Book Exchange Platform using Community Sharing Model</span>
+                <span className="sm:hidden">Digital Book Exchange</span>
               </button>
               
               <div className="hidden md:flex space-x-1">
