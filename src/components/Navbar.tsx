@@ -200,7 +200,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onPageChange }) => 
                 className="flex items-center space-x-2 text-xl font-bold text-primary"
               >
                 <BookOpen className="h-6 w-6" />
-                <span>BookBridge</span>
+                <span>Digital Book Exchange Platform using Community Sharing Model</span>
               </button>
               
               <div className="hidden md:flex space-x-1">
